@@ -4,68 +4,65 @@ import {
   Post,
   Body,
   Param,
-  Headers,
   Query,
+  HttpStatus,
   HttpCode,
-  Req,
-  Res,
-  Session,
-  Inject,
+  Patch,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { ConfigModule } from '@/config/config.module';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { QueryUserDto } from './dto/query-user.dto';
 
 @Controller('user')
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-    @Inject('Config') private readonly base: ConfigModule,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
-  @Get('code')
-  createCOde(@Req() req, @Res() res, @Session() session) {
-    const captcha = this.userService.createCode();
-    session.code = captcha.text;
-    res.type('image/svg+xml');
-    res.send(captcha.data);
-  }
-
-  @Post('create')
-  createUser(@Body() Body, @Session() session) {
-    if (session.code.toLocaleLowerCase() === Body?.code?.toLocaleLowerCase()) {
-      return {
-        status: 200,
-        message: '验证码正确',
-      };
-    } else {
-      return {
-        status: 999,
-        message: '验证码错误',
-      };
-    }
-  }
-
-  @Get()
-  findAll(@Query() query) {
-    return this.base;
-  }
-
+  /**
+   * 新增用户
+   * @param createUserDto
+   * @returns
+   */
   @Post('add')
-  create(@Body('age') body) {
-    console.log(body);
-    return {
-      status: 200,
-      message: body,
-    };
+  @HttpCode(HttpStatus.OK)
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.userService.create(createUserDto);
   }
 
-  @Get(':id')
-  @HttpCode(500)
-  findId(@Param() param, @Headers() headers) {
-    console.log(param, headers);
-    return {
-      status: 200,
-      message: { param, headers },
-    };
+  /**
+   * @method 查询用户列表
+   * @param queryUserDto
+   * @returns
+   */
+  @Post('list')
+  @HttpCode(HttpStatus.OK)
+  findAll(@Body() queryUserDto: QueryUserDto) {
+    return this.userService.findAll(queryUserDto);
   }
+
+  /**
+   * 更新用户
+   * @param id 用户id
+   * @param updateUserDto 更新信息
+   * @returns
+   */
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.userService.updateUser(+id, updateUserDto);
+  }
+
+  /**
+   * @method 查询用户
+   * @param id 用户id
+   * @returns
+   */
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.userService.findUserById(+id);
+  }
+
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return this.userService.remove(+id);
+  // }
 }
